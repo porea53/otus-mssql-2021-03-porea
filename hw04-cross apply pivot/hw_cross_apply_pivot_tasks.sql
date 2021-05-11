@@ -176,13 +176,12 @@ OUTER APPLY (
 			,T.UnitPrice
 			,T.StockItemID
 	FROM (
-	SELECT SIL.StockItemID,
-		MAX(SIL.UnitPrice) AS UnitPrice
+	SELECT IL.StockItemID,
+		MAX(IL.UnitPrice) AS UnitPrice
 
-	FROM Sales.InvoiceLines AS SIL
-	JOIN Sales.Invoices AS SI ON SI.InvoiceID = SIL.InvoiceID
-	WHERE C.CustomerID = SI.CustomerID
-	GROUP BY SIL.StockItemID
+	FROM InvoiceLines AS IL
+	WHERE C.CustomerID = IL.CustomerID
+	GROUP BY IL.StockItemID
 	) AS T
 	ORDER BY T.UnitPrice DESC
 ) AS S;
