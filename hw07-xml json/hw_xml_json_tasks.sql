@@ -28,7 +28,6 @@ USE WideWorldImporters
 * Пример экспорта/импорта в файл https://docs.microsoft.com/en-us/sql/relational-databases/import-export/examples-of-bulk-import-and-export-of-xml-documents-sql-server
 */
 
-
 /*
 1. В личном кабинете есть файл StockItems.xml.
 Это данные из таблицы Warehouse.StockItems.
@@ -39,13 +38,97 @@ USE WideWorldImporters
 Существующие записи в таблице обновить, отсутствующие добавить (сопоставлять записи по полю StockItemName). 
 */
 
-напишите здесь свое решение
+DECLARE @xmlDocument  xml;
 
+SELECT @xmlDocument = BulkColumn
+FROM OPENROWSET
+(BULK 'C:\otus-mssql-2021-03-porea\hw07-xml json\StockItems-188-f89807.xml', 
+ SINGLE_CLOB)
+as data;
+
+DECLARE @docHandle int
+EXEC sp_xml_preparedocument @docHandle OUTPUT, @xmlDocument
+
+
+MERGE INTO [Warehouse].[StockItems] AS t
+USING (
+		SELECT	[StockItemName],
+				[SupplierID],
+				[UnitPackageID],
+				[OuterPackageID],
+				[QuantityPerOuter], 
+				[TypicalWeightPerUnit],
+				[LeadTimeDays],
+				[IsChillerStock],
+				[TaxRate],
+				[UnitPrice]
+		FROM OPENXML(@docHandle, N'/StockItems/Item')
+		WITH ( 
+				[StockItemName]			nvarchar(100)			'@Name',
+				[SupplierID]			int						'SupplierID',
+				[UnitPackageID]			int						'Package/UnitPackageID',
+				[OuterPackageID]		int						'Package/OuterPackageID',
+				[QuantityPerOuter]		int						'Package/QuantityPerOuter',
+				[TypicalWeightPerUnit]	decimal(18, 3)			'Package/TypicalWeightPerUnit',
+				[LeadTimeDays]			int						'LeadTimeDays',
+				[IsChillerStock]		bit						'IsChillerStock',
+				[TaxRate]				decimal(18, 3)			'TaxRate',
+				[UnitPrice]				decimal(18, 2)			'UnitPrice'
+		)
+	) as s
+ON (t.StockItemName = s.StockItemName)
+WHEN MATCHED THEN UPDATE 
+	SET [SupplierID] = s.SupplierID,
+		[UnitPackageID] = s.[UnitPackageID],
+		[OuterPackageID] = s.[OuterPackageID],
+		[QuantityPerOuter] = s.[QuantityPerOuter],
+		[TypicalWeightPerUnit] = s.[TypicalWeightPerUnit],
+		[LeadTimeDays] = s.[LeadTimeDays],
+		[IsChillerStock] = s.[IsChillerStock],
+		[TaxRate] = s.[TaxRate],
+		[UnitPrice] = s.[UnitPrice]
+WHEN NOT MATCHED BY TARGET THEN
+	INSERT ([StockItemName],
+			[SupplierID],
+			[UnitPackageID],
+			[OuterPackageID],
+			[QuantityPerOuter],
+			[TypicalWeightPerUnit],
+			[LeadTimeDays],
+			[IsChillerStock],
+			[TaxRate],
+			[UnitPrice],
+			[LastEditedBy])
+	VALUES ([StockItemName],
+			[SupplierID],
+			[UnitPackageID],
+			[OuterPackageID],
+			[QuantityPerOuter],
+			[TypicalWeightPerUnit],
+			[LeadTimeDays],
+			[IsChillerStock],
+			[TaxRate],
+			[UnitPrice],
+			1)
+OUTPUT $action, inserted.*;
+
+EXEC sp_xml_removedocument @docHandle;
 /*
 2. Выгрузить данные из таблицы StockItems в такой же xml-файл, как StockItems.xml
 */
 
-напишите здесь свое решение
+SELECT Item.StockItemName AS [@Name],
+		Item.SupplierID AS [SupplierID],
+		Item.[UnitPackageID] AS [Package/UnitPackageID],
+		Item.[OuterPackageID] AS [Package/OuterPackageID],
+		Item.[QuantityPerOuter] AS [Package/QuantityPerOuter],
+		Item.[TypicalWeightPerUnit] AS [Package/TypicalWeightPerUnit],
+		Item.[LeadTimeDays] AS [LeadTimeDays],
+		Item.[IsChillerStock] AS [IsChillerStock],
+		Item.[TaxRate] AS [TaxRate],
+		Item.[UnitPrice] AS [UnitPrice]
+FROM Warehouse.StockItems AS Item
+FOR  XML PATH('Item'), ROOT('StockItems');
 
 
 /*
@@ -56,8 +139,18 @@ USE WideWorldImporters
 - CountryOfManufacture (из CustomFields)
 - FirstTag (из поля CustomFields, первое значение из массива Tags)
 */
-
-напишите здесь свое решение
+SELECT	 Item.StockItemID
+		,Item.StockItemName
+		,J.*
+FROM Warehouse.StockItems AS Item
+CROSS APPLY (
+	SELECT *
+	FROM OPENJSON(Item.CustomFields)
+	WITH (
+		CountryOfManufacture nvarchar(50)	'$.CountryOfManufacture',
+		FirstTag nvarchar(200)				'$.Tags[0]'
+	)
+) AS J;
 
 /*
 4. Найти в StockItems строки, где есть тэг "Vintage".
@@ -78,5 +171,35 @@ USE WideWorldImporters
 ... where ... CustomFields like '%Vintage%' 
 */
 
-
-напишите здесь свое решение
+;WITH StockItemsTags AS ( 
+	SELECT	 Item.StockItemID
+			,Item.StockItemName
+			,TagValues.Val AS TagValue
+	FROM Warehouse.StockItems AS Item
+	CROSS APPLY (
+		SELECT *
+		FROM OPENJSON(Item.CustomFields)
+		WITH (	
+			Tag nvarchar(max)				'$.Tags' AS JSON
+		)
+	) AS J
+	CROSS APPLY (
+		SELECT *
+		FROM OPENJSON(J.Tag)
+		WITH (
+			Val nvarchar(200)				'$'
+		)
+	) AS TagValues
+),
+StockItemTagAgg AS (
+	SELECT I.StockItemID
+			,STRING_AGG(I.TagValue,',') AS Tags
+	FROM StockItemsTags AS I
+	GROUP BY I.StockItemID
+)
+SELECT SI.StockItemID
+		,SI.StockItemName
+		,Agg.Tags
+FROM StockItemsTags AS SI
+JOIN StockItemTagAgg AS Agg ON Agg.StockItemID = SI.StockItemID
+WHERE SI.TagValue = 'Vintage';
