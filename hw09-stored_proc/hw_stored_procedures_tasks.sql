@@ -126,16 +126,15 @@ SET @CustomerID = 832;
 
 SET STATISTICS TIME, IO ON
 
---SELECT Sales.udfCustomerInvoicesAmount(@CustomerID);
-
 EXEC Sales.spCustomerInvoicesAmount @CustomerID = @CustomerID;
+
+SELECT Sales.udfCustomerInvoicesAmount(@CustomerID);
 
 SET STATISTICS TIME, IO OFF
 
 /* План для скалярной функции просмотреть не получилось, 
 Estimated Subtree Cost значительно меньше для функции
-Но статистика показывает приблизительно одинаковый уровень CPU time для обоих запросов
-Предполагаю что производительность приблизительно одинакова.
+CPU Time и Elapsed Time для функции ниже, предполагаю что она работает быстрее
 */
 
 
