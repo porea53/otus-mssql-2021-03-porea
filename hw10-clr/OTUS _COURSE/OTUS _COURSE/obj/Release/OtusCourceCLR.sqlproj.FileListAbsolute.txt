@@ -1,0 +1,9 @@
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\bin\Release\OtusCourceCLR.dacpac
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\bin\Release\OtusCourseCLR.dll
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\bin\Release\OtusCourseCLR.pdb
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\OtusCourseCLR.dll
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\OtusCourseCLR.pdb
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\Model.xml
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\refactor.xml
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\postdeploy.sql
+C:\Users\porea\source\repos\OTUS _COURSE\OTUS _COURSE\obj\Release\predeploy.sql

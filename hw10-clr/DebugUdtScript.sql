@@ -1,0 +1,1 @@
+select dbo.udfGetLocationTemperature('Moscow','')
