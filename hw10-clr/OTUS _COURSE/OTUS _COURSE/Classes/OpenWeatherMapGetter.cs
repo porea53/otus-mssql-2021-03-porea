@@ -6,7 +6,7 @@ namespace OtusCourseCLR
 {
     class OpenWeatherMapGetter
     {
-        const string defaultApiKey = "5b33ae4fb0c4710f93c353b92f67b4bd";
+        const string defaultApiKey = "";
         const string apiLocationUrl = "http://api.openweathermap.org/data/2.5/weather?q={1}&appid={0}&units=metric";
 
         private string apiKey;
